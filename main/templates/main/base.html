@@ -20,7 +20,7 @@
 <link  href="{% static 'css/bootstrap-colormode.css' %}" rel="stylesheet">
     
     <!-- Custom styles for this template -->
-    <link href="navbar-fixed.css" rel="stylesheet">
+    <link href="{% static 'css/navbar-fixed.css' %}" rel="stylesheet">
   </head>
   <body>
 
@@ -55,6 +55,7 @@
 </nav>
 
 {% block content %}{% endblock %}
+{% block scripts %}{% endblock scripts %}
 
 <script src="{% static 'js/bootstrap.bundle.min.js' %}"></script>
 

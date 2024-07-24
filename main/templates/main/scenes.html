@@ -1,7 +1,33 @@
 {% extends 'main/base.html' %}
+{% load static %}
 
 {% block content %}
+<style>
+    #scene-box {
+        width: 100%;
+        height: 200px; /* Adjust as needed */
+    }
+</style>
 <main class="container">
-
+    <section class="py-5 text-center container">
+        <div id="scene-box"></div>
+    </section>
 </main>
-{% endblock %}
+{% endblock content %}
+
+
+{% block scripts %}
+<!-- Three.js  -->
+<script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.166.1/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.166.1/examples/jsm/"
+      }
+    }
+</script>
+
+<script type="module" src="{% static 'js/threejs-scenes.js' %}" defer></script>
+
+{% endblock scripts %}
+
