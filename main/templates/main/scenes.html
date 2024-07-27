@@ -18,7 +18,7 @@
 
 {% block scripts %}
 <!-- Three.js  -->
-<script type="importmap">
+<!-- <script type="importmap">
     {
       "imports": {
         "three": "https://cdn.jsdelivr.net/npm/three@0.166.1/build/three.module.js",
@@ -26,9 +26,12 @@
         "OrbitControls": "https://cdn.jsdelivr.net/npm/three@0.166.1/examples/jsm/controls/OrbitControls.js"
       }
     }
-</script>
+</script> -->
+<script src="{% static 'js/bundle.js' %}"></script>
 
-<script type="module" src="{% static 'js/threejs-scenes.js' %}" defer></script>
+
+
+<!-- </script><script type="module" src="{% static 'js/threejs-scenes.js' %}" defer></script> -->
 
 {% endblock scripts %}
 

@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
-
+import { createNoise2D } from "simplex-noise"; // Correct import
 
 const scene = new THREE.Scene();
 
@@ -17,7 +17,7 @@ const sceneBox = document.getElementById('scene-box');
 sceneBox.appendChild(renderer.domElement);
 
 // Plane
-const planeGeometry = new THREE.PlaneGeometry(10,10);
+const planeGeometry = new THREE.PlaneGeometry(10,10,50,50);
 planeGeometry.rotateX(30);
 const planeMaterial = new THREE.MeshBasicMaterial({color: 0x22aa22});
 const plane = new THREE.Mesh(planeGeometry, planeMaterial);
