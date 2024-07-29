@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
-import { createNoise2D } from "simplex-noise"; // Correct import
+import { createNoise2D } from "simplex-noise";
 
 const scene = new THREE.Scene();
 

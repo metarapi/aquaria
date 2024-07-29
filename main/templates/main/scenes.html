@@ -1,37 +1,32 @@
 {% extends 'main/base.html' %}
 {% load static %}
 
+{% block navigation %}
+<ul class="pagination">
+    <li class="page-item"><a class="page-link" href="#">1</a></li>
+    <li class="page-item"><a class="page-link" href="#">2</a></li>
+    <li class="page-item"><a class="page-link" href="#">3</a></li>
+</ul>
+{% endblock %}
+
 {% block content %}
 <style>
     #scene-box {
-        width: 100%;
-        height: 200px; /* Adjust as needed */
-    }
+    width: 100%;
+    height: 100vh; /* Full viewport height */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
 </style>
-<main class="container">
-    <section class="py-5 text-center container">
-        <div id="scene-box"></div>
-    </section>
+<main >
+    <div id="scene-box"></div>
 </main>
 {% endblock content %}
 
 
+
 {% block scripts %}
-<!-- Three.js  -->
-<!-- <script type="importmap">
-    {
-      "imports": {
-        "three": "https://cdn.jsdelivr.net/npm/three@0.166.1/build/three.module.js",
-        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.166.1/examples/jsm/",
-        "OrbitControls": "https://cdn.jsdelivr.net/npm/three@0.166.1/examples/jsm/controls/OrbitControls.js"
-      }
-    }
-</script> -->
 <script src="{% static 'js/bundle.js' %}"></script>
-
-
-
-<!-- </script><script type="module" src="{% static 'js/threejs-scenes.js' %}" defer></script> -->
-
 {% endblock scripts %}
 
