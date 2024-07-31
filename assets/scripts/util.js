@@ -1,3 +1,5 @@
+import * as THREE from 'three';
+
 /**
  * Generates 2D periodic simplex noise with a given period and rotation.
  *
@@ -99,4 +101,30 @@ function mul(a, b) {
     return [a * b[0], a * b[1]];
 }
 
+/**
+* Generates a Gerstner wave at a given point in space.
+*
+* @param {number} x - The x-coordinate of the point where the wave height is calculated.
+* @param {number} y - The y-coordinate of the point where the wave height is calculated.
+* @param {number} time - The current time, used to animate the wave.
+* @param {number} amplitude - The wave amplitude, representing the height of the wave.
+* @param {number} wavelength - The wave wavelength, representing the distance between wave crests.
+* @param {number} speed - The wave speed, representing how fast the wave propagates.
+* @param {object} direction - The wave direction, represented as an object with x and y properties.
+* @param {number} direction.x - The x-component of the wave direction vector.
+* @param {number} direction.y - The y-component of the wave direction vector.
+* @returns {object} - The wave height at the given point.
+*/
+
+function gerstnerWave(x, y, time, amplitude, wavelength, speed, direction) {
+    const k = (2 * Math.PI) / wavelength;
+    const d = new THREE.Vector2(direction.x, direction.y).normalize();
+    const f = k * (d.x * x + d.y * y) + speed * time;
+    const waveHeight = amplitude * Math.sin(f);
+    return { waveHeight};
+  }
+
+// Export the gerstnerWave function
+export { gerstnerWave };
+// Export the psrdnoise2 function
 export { psrdnoise2 };

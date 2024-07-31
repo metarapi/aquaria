@@ -2,218 +2,127 @@ window.htmx = require("htmx.org");
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { createNoise2D } from "simplex-noise";
-import { psrdnoise2 } from "./util.js";
-const sceneData = require("./Scene.json");
+import { gerstnerWave, psrdnoise2 } from "./util.js";
 
-console.log('HTMX is loaded!');
-console.log('Three.js is loaded!');
+console.log("HTMX is loaded!");
+console.log("Three.js is loaded!");
 
-const sceneBox = document.getElementById('scene-box');
+// Boolean selector for which type of noise to use (true for psrdnoise2, false for gerstnerWave)
+const useSimplexNoise = false;
+
+// This three.js scene holds a plane mesh which is oscilating with Gerstner waves
+
+const sceneBox = document.getElementById("scene-box");
 const width = sceneBox.clientWidth;
 const height = sceneBox.clientHeight;
 
 const scene = new THREE.Scene();
-
 const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
+
 camera.position.z = 5;
+camera.position.y = -7;
+camera.rotation.x = 1;
 
 const renderer = new THREE.WebGLRenderer();
 renderer.setSize(width, height);
-
-// Load the exported scene JSON file
-const loader = new THREE.ObjectLoader();
-const loadedScene = loader.parse(sceneData);
-scene.add(loadedScene);
-
-// Variables to store references
-const meshes = [];
-const lights = [];
-
-// Access elements in the loaded scene
-loadedScene.traverse(function (object) {
-  if (object.isMesh) {
-    meshes.push(object); // Store the mesh reference
-  }
-  if (object.isLight) {
-    lights.push(object); // Store the light reference
-  }
-});
+sceneBox.appendChild(renderer.domElement);
 
 // Add OrbitControls
 const controls = new OrbitControls(camera, renderer.domElement);
 
-sceneBox.appendChild(renderer.domElement);
+// Define the dimensions of the noise array
+const xSize = 100;
+const ySize = 100;
 
-// Plane
-const planeGeometry = new THREE.PlaneGeometry(250,250,1000,1000);
+// Create a plane geometry
+const geometry = new THREE.PlaneGeometry(10, 10, xSize - 1, ySize - 1);
 
-// Add noise to the plane
-const noise2D = createNoise2D();
-const noiseScale = .1; // Adjust noise scale to control the magnitude of noise
-const noiseAmplitude = 1; // Adjust noise amplitude to control the height of noise
-
-const vertices = planeGeometry.attributes.position.array;
-for (let i = 0; i < vertices.length; i += 3) {
-    const x = vertices[i];
-    const y = vertices[i + 1];
-
-    // Apply noise to the z-coordinate
-    const noiseValue = noise2D(x * noiseScale, y * noiseScale);
-    vertices[i + 2] = noiseValue * noiseAmplitude;
-}
-
-// Update the vertex normals to reflect the changes
-planeGeometry.computeVertexNormals();
-
-planeGeometry.rotateX(30);
-
-const planeMaterial = new THREE.MeshStandardMaterial({
-  color: 0xC2B280, // Sandy color
-  roughness: 0.8, // Adjust roughness to make it look more like sand
-  metalness: 0.2, // Adjust metalness
-  side: THREE.DoubleSide, // Render both sides of the surface
+// Create a material and mesh
+const material = new THREE.MeshBasicMaterial({
+  color: 0x00ff00,
+  wireframe: true,
 });
-  const plane = new THREE.Mesh(planeGeometry, planeMaterial);
-  scene.add(plane);
-  
-  // Add a light source to see the effects of the material
-  const light = new THREE.DirectionalLight(0xffffff, 1);
-  light.position.set(5, 5, 5).normalize();
-  scene.add(light);
+const mesh = new THREE.Mesh(geometry, material);
 
-function gerstnerWave(x, y, time, amplitude, wavelength, speed, direction) {
-  const k = (2 * Math.PI) / wavelength;
-  const d = new THREE.Vector2(direction.x, direction.y).normalize();
-  const f = k * (d.x * x + d.y * y) + speed * time;
-  const waveHeight = amplitude * Math.sin(f);
-  return { waveHeight };
+// Add the mesh to the scene
+scene.add(mesh);
+
+// Function to update noise values
+function updateNoise(time) {
+    const positions = geometry.attributes.position.array;
+    for (let i = 0; i < positions.length; i += 3) {
+        const x = (i / 3) % xSize;
+        const y = Math.floor((i / 3) / xSize);
+        const noiseValue = psrdnoise2([x / 10, y / 10], [50, 50], time / 1000).value; // Include time component
+        if (isNaN(noiseValue)) {
+            console.error(`NaN value detected at (${x}, ${y})`);
+        }
+        positions[i + 2] = noiseValue/4; // Set the Z value to the noise value
+    }
+    geometry.attributes.position.needsUpdate = true;
+    geometry.computeVertexNormals();
+    geometry.computeBoundingSphere();
 }
 
-// Function to retrieve vertices from a THREE.js mesh
-function getVertices(mesh) {
-  const positions = mesh.geometry.attributes.position.array;
-  const vertices = [];
+function updateGerstnerWaves(time, amplitudeFactor = 0.2) {
+  const positions = geometry.attributes.position.array;
   for (let i = 0; i < positions.length; i += 3) {
-    vertices.push({
-      x: positions[i],
-      y: positions[i + 1],
-      z: positions[i + 2],
-    });
+    const x = positions[i];
+    const y = positions[i + 1];
+    let waveHeight = 0;
+
+    // Apply multiple Gerstner waves
+    const waves = [
+      { amplitude: 1*amplitudeFactor, wavelength: 3, speed: 1, direction: { x: 1, y: 0 } },
+      { amplitude: 0.5*amplitudeFactor, wavelength: 5, speed: 1.5, direction: { x: 0, y: 1 } },
+      { amplitude: 0.3*amplitudeFactor, wavelength: 7, speed: 0.8, direction: { x: 1, y: 1 } },
+      { amplitude: 0.1*amplitudeFactor, wavelength: 15, speed: 0.4, direction: { x: 0, y: 1 } },
+      { amplitude: 0.7*amplitudeFactor, wavelength: 9, speed: 1, direction: { x: 0.5, y: 1 } },
+    ];
+
+    for (const wave of waves) {
+      const result = gerstnerWave(
+        x,
+        y,
+        time,
+        wave.amplitude,
+        wave.wavelength,
+        wave.speed,
+        wave.direction
+      );
+      waveHeight += result.waveHeight;
+    }
+
+    positions[i + 2] = waveHeight; // Update Z value for wave height
   }
-  return vertices;
+  geometry.attributes.position.needsUpdate = true;
+  geometry.computeVertexNormals();
+  geometry.computeBoundingSphere();
 }
 
-// Function to find min and max height values
-function findMinMaxHeight(vertices) {
-  let minHeight = Infinity;
-  let maxHeight = -Infinity;
-  vertices.forEach((vertex) => {
-    if (vertex.y < minHeight) minHeight = vertex.y; // Adjusted to Y-axis
-    if (vertex.y > maxHeight) maxHeight = vertex.y; // Adjusted to Y-axis
-  });
-  return { minHeight, maxHeight };
+// Render the scene
+function render() {
+  requestAnimationFrame(render);
+  controls.update();
+  renderer.render(scene, camera);
 }
 
-// Function to normalize heights
-function normalizeHeights(vertices, minHeight, maxHeight) {
-  return vertices.map((vertex) => ({
-    ...vertex,
-    normalizedHeight: (vertex.y - minHeight) / (maxHeight - minHeight), // Adjusted to Y-axis
-  }));
+// Start the rendering loop
+render();
+
+if (useSimplexNoise) {
+  // Update noise values at a fixed interval (e.g., 30 times per second)
+  setInterval(() => {
+    const time = performance.now();
+    updateNoise(time);
+  }, 1000 / 30); // 30 updates per second
+} else {
+  // Update Gerstner waves at a fixed interval (e.g., 30 times per second)
+  setInterval(() => {
+    const time = performance.now() / 1000; // Convert to seconds
+    updateGerstnerWaves(time);
+  }, 1000 / 30); // 30 updates per second
 }
 
-// Wave properties array
-const waveProperties = [
-  {
-    amplitudeFactor: 0.01,
-    wavelength: 10,
-    speed: 1,
-    direction: { x: 1, y: 0 },
-  },
-  {
-    amplitudeFactor: 0.02,
-    wavelength: 15,
-    speed: 0.8,
-    direction: { x: -1, y: 0.5 },
-  },
-  {
-    amplitudeFactor: 0.015,
-    wavelength: 12,
-    speed: 1.2,
-    direction: { x: 0.5, y: -1 },
-  },
-  {
-    amplitudeFactor: 0.03,
-    wavelength: 8,
-    speed: 1.5,
-    direction: { x: -0.5, y: -0.5 },
-  },
-  {
-    amplitudeFactor: 0.02,
-    wavelength: 20,
-    speed: 0.5,
-    direction: { x: 1, y: 1 },
-  },
-];
-
-// Global wave height multiplier
-let waveHeightMultiplier = 0.33;
-
-// Function to update Gerstner waves
-function updateGerstnerWaves(time) {
-  meshes.forEach((mesh) => {
-    const vertices = getVertices(mesh);
-    const { minHeight, maxHeight } = findMinMaxHeight(vertices);
-    const normalizedVertices = normalizeHeights(vertices, minHeight, maxHeight);
-
-    normalizedVertices.forEach((vertex, index) => {
-      let waveHeight = 0;
-      waveProperties.forEach((wave) => {
-        const waveResult = gerstnerWave(
-          vertex.x,
-          vertex.z, // Adjusted to Z-axis for wave direction
-          time,
-          wave.amplitudeFactor * vertex.normalizedHeight, // Use normalized height as weight
-          wave.wavelength,
-          wave.speed,
-          wave.direction
-        );
-        waveHeight += waveResult.waveHeight;
-      });
-      mesh.geometry.attributes.position.array[index * 3 + 1] =
-        vertex.y + waveHeight * waveHeightMultiplier; // Adjusted to Y-axis
-    });
-
-    // Update geometry
-    mesh.geometry.attributes.position.needsUpdate = true;
-  });
-}
-
-// Fog
-const fogColor = "#112266"
-const fogNear = 1;
-const fogFar = 75;
-scene.fog = new THREE.Fog(fogColor, fogNear, fogFar);
-
-const animate = () => {
-    requestAnimationFrame(animate);
-    renderer.render(scene, camera);
-}
-
-animate();
-
-// Handle window resize
-window.addEventListener('resize', () => {
-  const width = sceneBox.clientWidth;
-  const height = sceneBox.clientHeight
-  camera.aspect = width / height;
-  camera.updateProjectionMatrix();
-  renderer.setSize(width, height);
-});
 
 
-// Update Gerstner waves at a fixed interval (e.g., 30 times per second)
-setInterval(() => {
-  const time = performance.now() / 1000; // Convert to seconds
-  updateGerstnerWaves(time);
-}, 1000 / 30); // 30 updates per second
